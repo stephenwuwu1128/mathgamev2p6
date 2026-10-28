@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>刻度大偵探：排水法數學挑戰 🧪</title>
+  <style>
+    :root {
+      --primary: #2563EB;
+      --primary-dark: #1D4ED8;
+      --water-color: rgba(56, 189, 248, 0.65);
+      --water-border: #0284C7;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #game-card {
+      background: white;
+      width: 95%;
+      max-width: 800px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      margin: 15px 0;
+      position: relative;
+    }
+
+    header {
+      background: #1E293B;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .stat-item {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+
+    /* 模式選擇頁面 */
+    #mode-select-screen {
+      padding: 35px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .mode-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #1E293B;
+      margin-bottom: 8px;
+    }
+
+    .mode-subtitle {
+      color: #64748B;
+      font-size: 1rem;
+      margin-bottom: 30px;
+    }
+
+    .mode-btn-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      width: 100%;
+      max-width: 750px;
+    }
+
+    .mode-card {
+      background: #F8FAFC;
+      border: 3px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 20px 15px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .mode-card:active {
+      border-color: var(--primary);
+    }
+
+    .mode-icon {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+
+    .mode-card h3 {
+      margin: 0 0 6px 0;
+      font-size: 1.25rem;
+      color: #0F172A;
+    }
+
+    .mode-card p {
+      margin: 0;
+      color: #64748B;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .lock-badge {
+      display: inline-block;
+      margin-top: 8px;
+      background: #E2E8F0;
+      color: #475569;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    /* 實驗顯示區：純 HTML + CSS 繪製 */
+    #experiment-area {
+      width: 100%;
+      background: #F1F5F9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 10px;
+      gap: 20px;
+    }
+
+    .beaker-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 220px;
+    }
+
+    .beaker-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1E293B;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* HTML 量杯容器 */
+    .beaker {
+      width: 140px;
+      height: 220px;
+      border: 4px solid #334155;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      position: relative;
+      background: #FFFFFF;
+      box-shadow: inset 0 -5px 10px rgba(0,0,0,0.05);
+    }
+
+    /* 水柱 */
+    .water-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--water-color);
+      border-top: 3px solid var(--water-border);
+      transition: height 0.2s ease-out;
+    }
+
+    /* 刻度層 */
+    .ticks-layer {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+    }
+
+    .tick-line {
+      position: absolute;
+      left: 0;
+      background: #475569;
+      height: 2px;
+    }
+
+    .tick-line.major {
+      width: 22px;
+      background: #0F172A;
+    }
+
+    .tick-line.minor {
+      width: 12px;
+      background: #94A3B8;
+    }
+
+    .tick-label {
+      position: absolute;
+      left: 26px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #0F172A;
+      transform: translateY(-50%);
+      line-height: 1;
+      user-select: none;
+    }
+
+    /* 放入物件層 */
+    .objects-container {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 0 10px;
+      z-index: 2;
+    }
+
+    .object-item {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #F59E0B;
+      border: 2px solid #B45309;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .arrow-divider {
+      font-size: 2rem;
+      color: #2563EB;
+      font-weight: bold;
+    }
+
+    /* 題目區 */
+    #question-area {
+      padding: 20px;
+      border-top: 1px solid #E2E8F0;
+      background: #FFFFFF;
+    }
+
+    .question-text {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 15px;
+      line-height: 1.4;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 550px) {
+      .options-grid {
+        grid-template-columns: 1fr;
+      }
+      #experiment-area {
+        gap: 5px;
+      }
+      .beaker-stage {
+        width: 150px;
+      }
+      .beaker {
+        width: 110px;
+      }
+    }
+
+    .btn-opt {
+      background: #F8FAFC;
+      border: 2px solid #CBD5E1;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1E293B;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-opt:active {
+      background: #EFF6FF;
+      border-color: var(--primary);
+    }
+
+    /* 彈窗 */
+    .overlay-modal {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.75);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 420px;
+      width: 90%;
+    }
+
+    .feedback-msg {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .feedback-detail {
+      font-size: 1rem;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .passcode-input {
+      width: 80%;
+      padding: 10px 15px;
+      font-size: 1.2rem;
+      text-align: center;
+      letter-spacing: 4px;
+      border: 2px solid #CBD5E1;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .passcode-err {
+      color: #EF4444;
+      font-size: 0.88rem;
+      display: none;
+      margin-bottom: 10px;
+    }
+
+    /* 結算頁面 */
+    #result-screen {
+      padding: 30px 20px;
+      display: none;
+      text-align: center;
+    }
+
+    .result-score {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .pass-tag {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+
+    .pass-tag.pass { background: #D1FAE5; color: #065F46; }
+    .pass-tag.fail { background: #FEE2E2; color: #991B1B; }
+
+    .review-list {
+      text-align: left;
+      background: #F8FAFC;
+      border-radius: 12px;
+      padding: 15px;
+      max-height: 220px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    .review-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #E2E8F0;
+      font-size: 0.9rem;
+    }
+
+    .review-item:last-child {
+      border-bottom: none;
+    }
+
+    .btn-action {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: #E2E8F0;
+      color: #334155;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-card">
+  <header>
+    <div class="title-group">
+      <h1 id="mode-display">🧪 刻度大偵探：排水法挑戰</h1>
+    </div>
+    <div class="stats">
+      <div class="stat-item" id="question-progress" style="display:none;">進度：1 / 5</div>
+      <div class="stat-item" id="score-display" style="display:none;">得分：0</div>
+    </div>
+  </header>
+
+  <!-- 模式選擇界面 -->
+  <div id="mode-select-screen">
+    <div class="mode-title">🧪 刻度大偵探：排水法挑戰</div>
+    <div class="mode-subtitle">請選擇難度級別開始挑戰：</div>
+    
+    <div class="mode-btn-container">
+      <div class="mode-card" onclick="selectMode('easy')">
+        <div class="mode-icon">🟢</div>
+        <h3>初級模式</h3>
+        <p>• 固定容量 (50 cm³)<br/>• 顯示所有刻度數字<br/>• 適合基礎推算</p>
+        <div class="lock-badge" style="background:#D1FAE5; color:#065F46;">免密碼</div>
+      </div>
+
+      <div class="mode-card" onclick="selectMode('medium')">
+        <div class="mode-icon">🟡</div>
+        <h3>中級模式</h3>
+        <p>• 中型容量 (100 cm³)<br/>• 隱藏部分中間刻度<br/>• 考驗小格計算</p>
+        <div class="lock-badge">🔒 密碼: 555</div>
+      </div>
+
+      <div class="mode-card" onclick="selectMode('hard')">
+        <div class="mode-icon">🔥</div>
+        <h3>高級模式</h3>
+        <p>• 變幻容量 (150-200 cm³)<br/>• 僅顯示最高容量<br/>• 考驗逆推能力</p>
+        <div class="lock-badge">🔒 密碼: 999</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 實驗顯示區：純 HTML / CSS 幾何渲染 (iPad 100% 不死機) -->
+  <div id="experiment-area" style="display:none;">
+    <!-- 左容器 (未放入) -->
+    <div class="beaker-stage">
+      <div class="beaker">
+        <div class="water-fill" id="water-left"></div>
+        <div class="ticks-layer" id="ticks-left"></div>
+      </div>
+      <div class="beaker-title">【實驗前】未放入物件</div>
+    </div>
+
+    <!-- 中間箭頭 -->
+    <div class="arrow-divider">➔</div>
+
+    <!-- 右容器 (已放入) -->
+    <div class="beaker-stage">
+      <div class="beaker">
+        <div class="water-fill" id="water-right"></div>
+        <div class="objects-container" id="objects-group"></div>
+        <div class="ticks-layer" id="ticks-right"></div>
+      </div>
+      <div class="beaker-title" id="right-title">【實驗後】放入物件</div>
+    </div>
+  </div>
+
+  <!-- 題目區 -->
+  <div id="question-area" style="display:none;">
+    <div class="question-text" id="question-text">載入題目中...</div>
+    <div class="options-grid" id="options-grid"></div>
+  </div>
+
+  <!-- 結算頁面 -->
+  <div id="result-screen">
+    <h2>🎉 挑戰完成！</h2>
+    <div class="result-score" id="final-score">得分：0 / 5</div>
+    <div id="pass-status" class="pass-tag pass">合格！</div>
+    <div class="review-list" id="review-list"></div>
+    <button class="btn-action" onclick="showModeSelect()">回主選單再試一次</button>
+  </div>
+
+  <!-- 解答反饋彈窗 -->
+  <div id="feedback-overlay" class="overlay-modal">
+    <div class="modal-box">
+      <div class="feedback-msg" id="feedback-msg">答對了！</div>
+      <div class="feedback-detail" id="feedback-detail"></div>
+      <button class="btn-action" id="btn-next-question" onclick="closeFeedbackAndNext()" style="width: 100%;">下一題 ➔</button>
+    </div>
+  </div>
+
+  <!-- 密碼解鎖彈窗 -->
+  <div id="passcode-overlay" class="overlay-modal">
+    <div class="modal-box">
+      <h3>🔑 輸入跳關密碼</h3>
+      <p style="color:#64748B; font-size:0.9rem;">請輸入解鎖此難度的指定密碼：</p>
+      <input type="password" id="passcode-input" class="passcode-input" maxlength="4" placeholder="***" />
+      <div id="passcode-err" class="passcode-err">密碼錯誤，請重新輸入！</div>
+      <div>
+        <button class="btn-action" onclick="submitPasscode()">解鎖關卡</button>
+        <button class="btn-secondary" onclick="closePasscodeModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // 遊戲狀態變數
+  let currentMode = 'easy';
+  let targetUnlockMode = '';
+  let currentQuestion = 0;
+  const totalQuestions = 5;
+  let score = 0;
+  let canAnswer = false;
+  let wrongRecords = [];
+  let currentData = null;
+
+  const passcodes = {
+    medium: '555',
+    hard: '999'
+  };
+
+  function showModeSelect() {
+    document.getElementById('mode-select-screen').style.display = 'flex';
+    document.getElementById('experiment-area').style.display = 'none';
+    document.getElementById('question-area').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'none';
+    document.getElementById('feedback-overlay').style.display = 'none';
+    document.getElementById('passcode-overlay').style.display = 'none';
+    
+    document.getElementById('question-progress').style.display = 'none';
+    document.getElementById('score-display').style.display = 'none';
+    document.getElementById('mode-display').innerText = '🧪 刻度大偵探：排水法挑戰';
+  }
+
+  function selectMode(mode) {
+    if (mode === 'easy') {
+      startGame('easy');
+    } else {
+      targetUnlockMode = mode;
+      document.getElementById('passcode-input').value = '';
+      document.getElementById('passcode-err').style.display = 'none';
+      document.getElementById('passcode-overlay').style.display = 'flex';
+    }
+  }
+
+  function closePasscodeModal() {
+    document.getElementById('passcode-overlay').style.display = 'none';
+  }
+
+  function submitPasscode() {
+    const inputVal = document.getElementById('passcode-input').value.trim();
+    if (inputVal === passcodes[targetUnlockMode]) {
+      closePasscodeModal();
+      startGame(targetUnlockMode);
+    } else {
+      document.getElementById('passcode-err').style.display = 'block';
+    }
+  }
+
+  function startGame(mode) {
+    currentMode = mode;
+    currentQuestion = 0;
+    score = 0;
+    wrongRecords = [];
+
+    document.getElementById('mode-select-screen').style.display = 'none';
+    document.getElementById('experiment-area').style.display = 'flex';
+    document.getElementById('question-area').style.display = 'block';
+
+    document.getElementById('question-progress').style.display = 'block';
+    document.getElementById('score-display').style.display = 'block';
+
+    let modeText = '【初級模式】';
+    if (mode === 'medium') modeText = '【中級模式】';
+    if (mode === 'hard') modeText = '【高級模式】';
+
+    document.getElementById('mode-display').innerText = `🧪 刻度大偵探 ${modeText}`;
+    document.getElementById('score-display').innerText = `得分：0`;
+
+    nextQuestion();
+  }
+
+  function nextQuestion() {
+    if (currentQuestion >= totalQuestions) {
+      showResult();
+      return;
+    }
+
+    currentQuestion++;
+    document.getElementById('question-progress').innerText = `進度：${currentQuestion} / ${totalQuestions}`;
+
+    generateQuestionData();
+    renderQuestionUI();
+    renderHtmlBeakers();
+  }
+
+  function generateQuestionData() {
+    let maxVol, majorStep, step;
+    
+    if (currentMode === 'easy') {
+      maxVol = 50;
+      majorStep = 10;
+      step = 2; 
+    } else if (currentMode === 'medium') {
+      maxVol = 100;
+      majorStep = 20;
+      step = 5;
+    } else {
+      const hardConfigs = [
+        { maxVol: 150, majorStep: 25, step: 5 },
+        { maxVol: 200, majorStep: 50, step: 10 }
+      ];
+      const selected = hardConfigs[Math.floor(Math.random() * hardConfigs.length)];
+      maxVol = selected.maxVol;
+      majorStep = selected.majorStep;
+      step = selected.step;
+    }
+
+    const totalTicks = maxVol / step;
+    const count = Math.floor(Math.random() * 3) + 2; 
+
+    const unitVolTicks = Math.floor(Math.random() * 3) + 1; 
+    const unitVol = unitVolTicks * step;
+    const totalVol = unitVol * count;
+
+    const maxStartTicks = totalTicks - (unitVolTicks * count) - 1;
+    const startVolTicks = Math.floor(Math.random() * (maxStartTicks - 2 + 1)) + 2;
+    const startVol = startVolTicks * step;
+    const endVol = startVol + totalVol;
+
+    const type = (Math.random() > 0.5) ? 'A' : 'B';
+    const correctAnswer = (type === 'A') ? totalVol : unitVol;
+
+    currentData = {
+      type: type,
+      cylinderConfig: { maxVol, majorStep, step },
+      startVol: startVol,
+      endVol: endVol,
+      totalVol: totalVol,
+      unitVol: unitVol,
+      count: count,
+      correctAnswer: correctAnswer
+    };
+  }
+
+  function renderQuestionUI() {
+    const qText = document.getElementById('question-text');
+    if (currentData.type === 'A') {
+      qText.innerText = `請觀察量杯，計算放入的 ${currentData.count} 個【立體】總體積是多少 cm³？`;
+    } else {
+      qText.innerText = `請觀察量杯，計算【每個】立體的體積是多少 cm³？`;
+    }
+
+    const options = new Set();
+    options.add(currentData.correctAnswer);
+
+    const step = currentData.cylinderConfig.step;
+    while (options.size < 4) {
+      let offset = (Math.floor(Math.random() * 5) - 2) * step;
+      let wrongAns = currentData.correctAnswer + offset;
+      if (wrongAns > 0 && wrongAns !== currentData.correctAnswer) {
+        options.add(wrongAns);
+      }
+    }
+
+    const shuffled = Array.from(options).sort(() => Math.random() - 0.5);
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    shuffled.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-opt';
+      btn.innerText = `${opt} cm³`;
+      btn.onclick = () => checkAnswer(opt);
+      grid.appendChild(btn);
+    });
+
+    canAnswer = true;
+  }
+
+  // 100% 純 HTML + CSS 渲染（徹底避開 iPad WebKit / GPU Context 問題）
+  function renderHtmlBeakers() {
+    const cfg = currentData.cylinderConfig;
+    const maxVol = cfg.maxVol;
+
+    // 水面百分比高度
+    const leftPct = (currentData.startVol / maxVol) * 100;
+    const rightPct = (currentData.endVol / maxVol) * 100;
+
+    document.getElementById('water-left').style.height = `${leftPct}%`;
+    document.getElementById('water-right').style.height = `${rightPct}%`;
+
+    document.getElementById('right-title').textContent = `【實驗後】放入 ${currentData.count} 個立體`;
+
+    // 生成物件圓球
+    const objGroup = document.getElementById('objects-group');
+    objGroup.innerHTML = '';
+    for (let i = 0; i < currentData.count; i++) {
+      const item = document.createElement('div');
+      item.className = 'object-item';
+      objGroup.appendChild(item);
+    }
+
+    // 繪製刻度層
+    renderTicksHtml('ticks-left', cfg);
+    renderTicksHtml('ticks-right', cfg);
+  }
+
+  function renderTicksHtml(layerId, config) {
+    const container = document.getElementById(layerId);
+    container.innerHTML = '';
+
+    const totalTicks = config.maxVol / config.step;
+
+    for (let i = 0; i <= totalTicks; i++) {
+      const val = i * config.step;
+      const bottomPct = (val / config.maxVol) * 100;
+
+      const isMajor = (val % config.majorStep === 0);
+
+      const line = document.createElement('div');
+      line.className = `tick-line ${isMajor ? 'major' : 'minor'}`;
+      line.style.bottom = `${bottomPct}%`;
+      container.appendChild(line);
+
+      let showText = false;
+      if (currentMode === 'easy') {
+        showText = isMajor;
+      } else if (currentMode === 'medium') {
+        showText = (val === 0 || val === config.maxVol / 2 || val === config.maxVol);
+      } else {
+        showText = (val === config.maxVol);
+      }
+
+      if (showText) {
+        const label = document.createElement('span');
+        label.className = 'tick-label';
+        label.style.bottom = `${bottomPct}%`;
+        label.textContent = val;
+        container.appendChild(label);
+      }
+    }
+  }
+
+  function checkAnswer(selectedVal) {
+    if (!canAnswer) return;
+    canAnswer = false;
+
+    const isCorrect = (selectedVal === currentData.correctAnswer);
+    if (isCorrect) {
+      score++;
+      document.getElementById('score-display').innerText = `得分：${score}`;
+      showFeedback(true, "🎉 答對了！太棒了！");
+    } else {
+      recordWrong(selectedVal);
+      showFeedback(false, `❌ 答錯了！正確答案是 ${currentData.correctAnswer} cm³`);
+    }
+  }
+
+  function recordWrong(userAns) {
+    let detail = "";
+    if (currentData.type === 'A') {
+      detail = `水位由 ${currentData.startVol} cm³ 上升至 ${currentData.endVol} cm³。${currentData.count} 個物件總體積 = ${currentData.endVol} - ${currentData.startVol} = ${currentData.totalVol} cm³。`;
+    } else {
+      detail = `總排水量 = ${currentData.endVol} - ${currentData.startVol} = ${currentData.totalVol} cm³。每個體積 = ${currentData.totalVol} ÷ ${currentData.count} = ${currentData.unitVol} cm³。`;
+    }
+
+    wrongRecords.push({
+      qNum: currentQuestion,
+      qText: document.getElementById('question-text').innerText,
+      userAns: userAns,
+      correctAns: currentData.correctAnswer,
+      detail: detail
+    });
+  }
+
+  function showFeedback(isCorrect, msg) {
+    const overlay = document.getElementById('feedback-overlay');
+    const msgBox = document.getElementById('feedback-msg');
+    const detailBox = document.getElementById('feedback-detail');
+    const btnNext = document.getElementById('btn-next-question');
+
+    msgBox.innerText = msg;
+    msgBox.style.color = isCorrect ? "#10B981" : "#EF4444";
+    
+    if(!isCorrect) {
+      detailBox.innerText = wrongRecords[wrongRecords.length - 1].detail;
+    } else {
+      detailBox.innerText = "做得好！點擊下方按鈕繼續挑戰。";
+    }
+
+    if (currentQuestion >= totalQuestions) {
+      btnNext.innerText = "查看結算結果 🏁";
+    } else {
+      btnNext.innerText = "下一題 ➔";
+    }
+
+    overlay.style.display = 'flex';
+  }
+
+  function closeFeedbackAndNext() {
+    document.getElementById('feedback-overlay').style.display = 'none';
+    nextQuestion();
+  }
+
+  function showResult() {
+    document.getElementById('question-area').style.display = 'none';
+    document.getElementById('experiment-area').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+
+    document.getElementById('final-score').innerText = `你一共答對了 ${score} / ${totalQuestions} 題！`;
+
+    const passStatus = document.getElementById('pass-status');
+    if (score >= 3) {
+      passStatus.className = 'pass-tag pass';
+      passStatus.innerHTML = '🌟 合格！請向老師出示，獲取貼紙一個 🎁';
+    } else {
+      passStatus.className = 'pass-tag fail';
+      passStatus.innerHTML = '💪 再接再厲！請重新挑戰！';
+    }
+
+    const reviewList = document.getElementById('review-list');
+    if (wrongRecords.length === 0) {
+      reviewList.innerHTML = '<p style="color:#10B981; font-weight:bold; text-align:center;">太厲害了！全部題目答對！🎉</p>';
+    } else {
+      reviewList.innerHTML = wrongRecords.map(item => `
+        <div class="review-item">
+          <strong>第 ${item.qNum} 題：</strong>${item.qText}<br/>
+          <span style="color:#EF4444;">你的答案：${item.userAns}</span> | 
+          <span style="color:#10B981;">正確答案：${item.correctAns} cm³</span><br/>
+          <small style="color:#475569;">💡 解析：${item.detail}</small>
+        </div>
+      `).join('');
+    }
+  }
+
+  window.onload = showModeSelect;
+</script>
+</body>
+</html>
